@@ -363,7 +363,9 @@ class JanusStreamStats {
     final measurement = await bitrate(query: query);
     final now = _clock();
     if (measurement == null) {
-      final reason = previous != null && now.difference(previous.evaluatedAt) >= thresholds.staleAfter ? NetworkQualityReason.stale : NetworkQualityReason.insufficientData;
+      final reason = previous != null && now.difference(previous.evaluatedAt) >= thresholds.staleAfter
+          ? NetworkQualityReason.stale
+          : NetworkQualityReason.insufficientData;
       final fallbackQuality = reason == NetworkQualityReason.stale ? thresholds.staleQuality : thresholds.missingDataQuality;
       return NetworkQualitySnapshot(quality: fallbackQuality, evaluatedAt: now, measurement: null, reason: reason);
     }
@@ -396,7 +398,8 @@ class JanusStreamStats {
         final snapshot = await networkQuality(query: query, thresholds: thresholds, previous: lastSnapshot);
         final previousSnapshot = lastSnapshot;
         lastSnapshot = snapshot;
-        final shouldEmit = !emitDistinct || previousSnapshot == null || previousSnapshot.quality != snapshot.quality || previousSnapshot.reason != snapshot.reason;
+        final shouldEmit =
+            !emitDistinct || previousSnapshot == null || previousSnapshot.quality != snapshot.quality || previousSnapshot.reason != snapshot.reason;
         if (shouldEmit && !controller.isClosed) {
           controller.add(snapshot);
         }
@@ -592,6 +595,8 @@ class JanusPlugin {
       this.pollingActive = true;
       // Warning no code should be placed after code below in init function
       // depending on transport setup events and messages for session and plugin
+      _context._logger.fine('INIZIO STARTPOLLING con ${_messagesStreamController != null} }');
+
       _handleTransportInitialization();
     } else {
       _context._logger.info("Plugin already Initialized! skipping");
@@ -601,12 +606,16 @@ class JanusPlugin {
   /// Binds listeners according to the selected transport (REST polling or WS).
   void _handleTransportInitialization() {
     if (_transport is RestJanusTransport) {
-      _pollingTimer = Timer.periodic(_context._pollingInterval, (timer) async {
-        if (!pollingActive) {
-          timer.cancel();
-        }
-        await _handlePolling();
-      });
+      // _messagesStreamController?.sink.add(EventMessage(event: {"startPolling": true}, jsep: null));
+      _handlePolling();
+      //Future.delayed(Duration(milliseconds: 250)).then((_) => _handlePolling());
+
+      //  _pollingTimer = Timer.periodic(_context._pollingInterval, (timer) async {
+      //    if (!pollingActive) {
+      //      timer.cancel();
+      //    }
+      //    await _handlePolling();
+      //  });
     } else if (_transport is WebSocketJanusTransport) {
       _wsStreamSubscription = (_transport as WebSocketJanusTransport).stream.listen((event) {
         _streamController!.add(parse(event));
@@ -689,7 +698,13 @@ class JanusPlugin {
       Map<String, dynamic>? response;
       if (!plugin!.contains('textroom')) {
         this._context._logger.finest('sending trickle');
-        Map<String, dynamic> request = {"janus": "trickle", "candidate": candidate.toMap(), "transaction": getUuid().v4(), ..._context._apiMap, ..._context._tokenMap};
+        Map<String, dynamic> request = {
+          "janus": "trickle",
+          "candidate": candidate.toMap(),
+          "transaction": getUuid().v4(),
+          ..._context._apiMap,
+          ..._context._tokenMap
+        };
         request["session_id"] = _session!.sessionId;
         request["handle_id"] = handleId;
         //checking and posting using websocket if in available
@@ -739,6 +754,9 @@ class JanusPlugin {
 
   /// Pulls pending Janus events when REST polling is active.
   _handlePolling() async {
+    print("FACCIO HANDLE POLLING");
+    _messagesStreamController?.sink.add(EventMessage(event: {"startPolling": true}, jsep: null));
+
     if (!pollingActive) return;
     if (_session!.sessionId == null) {
       pollingActive = false;
@@ -758,24 +776,33 @@ class JanusPlugin {
       }
       var response = (await http.get(Uri.https(extractDomainFromUrl(_transport!.url!), "janus/" + _session!.sessionId.toString(), queryParameters)));
       if (response.statusCode != 200 || response.body.isEmpty) {
+        print("POLLING FAILED");
         var errorMessage = "polling is failed from janus with error code : ${response.statusCode} , header : ${response.headers}";
         print(response.body);
         print(response.statusCode);
         print(errorMessage);
         _context._logger.severe(errorMessage);
+
         throw errorMessage;
       }
-      var decodedResponse = parse(response.body);
-      List<dynamic> json = ((decodedResponse != null && decodedResponse.isNotEmpty)) ? decodedResponse : [];
-      json.forEach((element) {
-        if (!_streamController!.isClosed) {
-          _streamController!.add(element);
-        } else {
-          pollingActive = false;
-          return;
-        }
-      });
-      _pollingRetries = 0;
+      try {
+        var decodedResponse = parse(response.body);
+        List<dynamic> json = ((decodedResponse != null && decodedResponse.isNotEmpty)) ? decodedResponse : [];
+        json.forEach((element) {
+          if (!_streamController!.isClosed) {
+            _streamController!.add(element);
+          } else {
+            pollingActive = false;
+            return;
+          }
+        });
+        _pollingRetries = 0;
+      } catch (e) {
+        _context._logger.severe("Errore nel parsing del polling");
+      }
+      _handlePolling();
+
+      // Future.delayed(Duration(milliseconds: 100)).then((_) => _handlePolling());
       return;
     } on HttpException catch (_) {
       _pollingRetries++;
@@ -892,7 +919,8 @@ class JanusPlugin {
         rtcDataChannelInit.ordered = true;
         rtcDataChannelInit.protocol = 'janus-protocol';
       }
-      webRTCHandle!.dataChannel[_context._dataChannelDefaultLabel] = await webRTCHandle!.peerConnection!.createDataChannel(_context._dataChannelDefaultLabel, rtcDataChannelInit);
+      webRTCHandle!.dataChannel[_context._dataChannelDefaultLabel] =
+          await webRTCHandle!.peerConnection!.createDataChannel(_context._dataChannelDefaultLabel, rtcDataChannelInit);
       if (webRTCHandle!.dataChannel[_context._dataChannelDefaultLabel] != null) {
         webRTCHandle!.dataChannel[_context._dataChannelDefaultLabel]!.onDataChannelState = (state) {
           if (!_onDataStreamController!.isClosed) {
@@ -1098,7 +1126,9 @@ class JanusPlugin {
               track: element,
               kind: element.kind == 'audio' ? RTCRtpMediaType.RTCRtpMediaTypeAudio : RTCRtpMediaType.RTCRtpMediaTypeVideo,
               init: RTCRtpTransceiverInit(
-                  streams: [webRTCHandle!.localStream!], direction: transceiverDirection, sendEncodings: element.kind == 'video' ? simulcastSendEncodings : null));
+                  streams: [webRTCHandle!.localStream!],
+                  direction: transceiverDirection,
+                  sendEncodings: element.kind == 'video' ? simulcastSendEncodings : null));
         });
       } else {
         _localStreamController!.sink.add(webRTCHandle!.localStream);

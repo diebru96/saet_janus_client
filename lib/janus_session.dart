@@ -17,6 +17,7 @@ class JanusSession {
 
   Future<JanusPlugin?> createAndWatch(int camId) async {
     try {
+      print("FACCIO CREATE AND WATCH VIDEO CON CAMID: $camId");
       String transaction = getUuid().v4();
       Map<String, dynamic> request = {"janus": "createwatch", "transaction": transaction, "id": camId, ..._context._tokenMap, ..._context._apiMap}
         ..removeWhere((key, value) => value == null);
@@ -25,10 +26,14 @@ class JanusSession {
         RestJanusTransport rest = (_transport as RestJanusTransport);
         response = (await rest.post(request)) as Map<String, dynamic>?;
         if (response != null) {
-          if (response.containsKey('janus') && response.containsKey('data')) {
-            _sessionId = response['data']['session_id'];
-            _handleId = response['data']['handle_id'];
+          if (response.containsKey('janus')) {
+            _sessionId = response['session_id'];
+            _handleId = response['handle_id'];
             rest.sessionId = sessionId;
+            print("arrivato sessionId: $_sessionId");
+
+            _context._logger.info('arrivato sessionId: $_sessionId');
+            _context._logger.info('arrivato handleId: $_handleId');
           }
         } else {
           throw "Janus Server not live or incorrect url/path specified";
@@ -83,6 +88,8 @@ class JanusSession {
   /// This can be used to attach plugin handle to the session.<br><br>
   /// [opaqueId] : opaque id is an optional string identifier used for client side correlations in event handlers or admin API.<br>
   Future<T> attachWatch<T extends JanusPlugin>(int handleId) async {
+    _context._logger.info('FACCIO ATTACHWATCH CON HANDLEID: $handleId');
+
     JanusPlugin plugin;
     if (T == JanusVideoRoomPlugin) {
       plugin = JanusVideoRoomPlugin(transport: _transport, context: _context, handleId: handleId, session: this);

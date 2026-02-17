@@ -183,9 +183,7 @@ class JanusClient {
       Logger? logger,
 
       /// forces creation of peer connection with plan-b sdb semantics
-      @Deprecated(
-          'set this option to true if you using legacy janus plugins with no unified-plan support only.')
-      bool usePlanB = false,
+      @Deprecated('set this option to true if you using legacy janus plugins with no unified-plan support only.') bool usePlanB = false,
       Duration? pollingInterval,
       String loggerName = "JanusClient",
       Level loggerLevel = Level.ALL,
@@ -219,10 +217,7 @@ class JanusClient {
   Future<JanusSession> createSession() async {
     _logger.info("Creating Session");
     _logger.fine("fine message");
-    JanusSession session = JanusSession(
-        refreshInterval: _refreshInterval,
-        transport: _transport,
-        context: this);
+    JanusSession session = JanusSession(refreshInterval: _refreshInterval, transport: _transport, context: this);
     try {
       await session.create();
     } catch (e) {
@@ -230,6 +225,20 @@ class JanusClient {
     }
     _logger.info("Session Created");
     return session;
+  }
+
+  Future<JanusPlugin?> createSessionAndWatchVideo(int camId) async {
+    _logger.info("Creating Session");
+    _logger.fine("fine message");
+    JanusSession session = JanusSession(refreshInterval: _refreshInterval, transport: _transport, context: this);
+    try {
+      JanusPlugin? plugin = await session.createAndWatch(camId);
+      return plugin;
+    } catch (e) {
+      _logger.severe(e);
+    }
+    _logger.info("Session Created");
+    return null;
   }
 
   /// Get janus server verbose information more like found on path `/info`

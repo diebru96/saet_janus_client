@@ -227,13 +227,13 @@ class JanusClient {
     return session;
   }
 
-  Future<JanusPlugin?> createSessionAndWatchVideo(int camId) async {
+  Future<JanusSessionPlugin?> createSessionAndWatchVideo(int camId) async {
     _logger.info("Creating Session");
     _logger.fine("fine message");
     JanusSession session = JanusSession(refreshInterval: _refreshInterval, transport: _transport, context: this);
     try {
       JanusPlugin? plugin = await session.createAndWatch(camId);
-      return plugin;
+      return JanusSessionPlugin(session: session, plugin: plugin);
     } catch (e) {
       _logger.severe(e);
     }
@@ -245,4 +245,10 @@ class JanusClient {
   Future<JanusClientInfo> getInfo() async {
     return JanusClientInfo.fromJson(await _transport.getInfo());
   }
+}
+
+class JanusSessionPlugin {
+  JanusSession? session;
+  JanusPlugin? plugin;
+  JanusSessionPlugin({this.session, this.plugin});
 }

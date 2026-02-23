@@ -363,9 +363,7 @@ class JanusStreamStats {
     final measurement = await bitrate(query: query);
     final now = _clock();
     if (measurement == null) {
-      final reason = previous != null && now.difference(previous.evaluatedAt) >= thresholds.staleAfter
-          ? NetworkQualityReason.stale
-          : NetworkQualityReason.insufficientData;
+      final reason = previous != null && now.difference(previous.evaluatedAt) >= thresholds.staleAfter ? NetworkQualityReason.stale : NetworkQualityReason.insufficientData;
       final fallbackQuality = reason == NetworkQualityReason.stale ? thresholds.staleQuality : thresholds.missingDataQuality;
       return NetworkQualitySnapshot(quality: fallbackQuality, evaluatedAt: now, measurement: null, reason: reason);
     }
@@ -398,8 +396,7 @@ class JanusStreamStats {
         final snapshot = await networkQuality(query: query, thresholds: thresholds, previous: lastSnapshot);
         final previousSnapshot = lastSnapshot;
         lastSnapshot = snapshot;
-        final shouldEmit =
-            !emitDistinct || previousSnapshot == null || previousSnapshot.quality != snapshot.quality || previousSnapshot.reason != snapshot.reason;
+        final shouldEmit = !emitDistinct || previousSnapshot == null || previousSnapshot.quality != snapshot.quality || previousSnapshot.reason != snapshot.reason;
         if (shouldEmit && !controller.isClosed) {
           controller.add(snapshot);
         }
@@ -695,16 +692,11 @@ class JanusPlugin {
   void _handleIceCandidatesSending(RTCPeerConnection peerConnection) {
     // get ice candidates and send to janus on this plugin handle
     peerConnection.onIceCandidate = (RTCIceCandidate candidate) async {
+      if (shouldDiscardCandidate(candidate)) return;
       Map<String, dynamic>? response;
       if (!plugin!.contains('textroom')) {
         this._context._logger.finest('sending trickle');
-        Map<String, dynamic> request = {
-          "janus": "trickle",
-          "candidate": candidate.toMap(),
-          "transaction": getUuid().v4(),
-          ..._context._apiMap,
-          ..._context._tokenMap
-        };
+        Map<String, dynamic> request = {"janus": "trickle", "candidate": candidate.toMap(), "transaction": getUuid().v4(), ..._context._apiMap, ..._context._tokenMap};
         request["session_id"] = _session!.sessionId;
         request["handle_id"] = handleId;
         //checking and posting using websocket if in available
@@ -718,6 +710,19 @@ class JanusPlugin {
         _streamController!.sink.add(response);
       }
     };
+  }
+
+  bool shouldDiscardCandidate(RTCIceCandidate candidate) {
+    if (candidate.candidate != null) {
+      if (candidate.candidate!.toLowerCase().contains(" tcp ") ||
+          candidate.candidate!.toLowerCase().contains("::1") ||
+          candidate.candidate!.toLowerCase().contains("::0") ||
+          candidate.candidate!.toLowerCase().contains("127.0.0.1") ||
+          candidate.candidate!.toLowerCase().contains(".local")) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Filters session-level events and emits those that match this handle.
@@ -919,8 +924,7 @@ class JanusPlugin {
         rtcDataChannelInit.ordered = true;
         rtcDataChannelInit.protocol = 'janus-protocol';
       }
-      webRTCHandle!.dataChannel[_context._dataChannelDefaultLabel] =
-          await webRTCHandle!.peerConnection!.createDataChannel(_context._dataChannelDefaultLabel, rtcDataChannelInit);
+      webRTCHandle!.dataChannel[_context._dataChannelDefaultLabel] = await webRTCHandle!.peerConnection!.createDataChannel(_context._dataChannelDefaultLabel, rtcDataChannelInit);
       if (webRTCHandle!.dataChannel[_context._dataChannelDefaultLabel] != null) {
         webRTCHandle!.dataChannel[_context._dataChannelDefaultLabel]!.onDataChannelState = (state) {
           if (!_onDataStreamController!.isClosed) {
@@ -1126,9 +1130,7 @@ class JanusPlugin {
               track: element,
               kind: element.kind == 'audio' ? RTCRtpMediaType.RTCRtpMediaTypeAudio : RTCRtpMediaType.RTCRtpMediaTypeVideo,
               init: RTCRtpTransceiverInit(
-                  streams: [webRTCHandle!.localStream!],
-                  direction: transceiverDirection,
-                  sendEncodings: element.kind == 'video' ? simulcastSendEncodings : null));
+                  streams: [webRTCHandle!.localStream!], direction: transceiverDirection, sendEncodings: element.kind == 'video' ? simulcastSendEncodings : null));
         });
       } else {
         _localStreamController!.sink.add(webRTCHandle!.localStream);

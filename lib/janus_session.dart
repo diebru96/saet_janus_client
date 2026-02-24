@@ -189,7 +189,13 @@ class JanusSession {
     return plugin as T;
   }
 
-  void dispose() {
+  Future<void> dispose() async {
+    String transaction = getUuid().v4();
+    Map<String, dynamic> request = {"janus": "destroy", "transaction": transaction, ..._context._tokenMap, ..._context._apiMap}..removeWhere((key, value) => value == null);
+    if (_transport is RestJanusTransport) {
+      RestJanusTransport rest = (_transport as RestJanusTransport);
+      var response = (await rest.post(request)) as Map<String, dynamic>?;
+    }
     if (_keepAliveTimer != null) {
       _keepAliveTimer!.cancel();
     }

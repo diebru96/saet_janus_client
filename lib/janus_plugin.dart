@@ -1086,39 +1086,8 @@ class JanusPlugin {
     final Map<String, dynamic> resolvedConstraints = Map<String, dynamic>.from(constraintsCandidate);
     _context._logger.fine(resolvedConstraints);
     if (webRTCHandle != null) {
-      if (useDisplayMediaDevices == true) {
-        final displayConstraints = Map<String, dynamic>.from(resolvedConstraints);
-        if (WebRTC.platformIsDesktop) {
-          if (desktopCaptureContext == null) {
-            throw ArgumentError('desktopCaptureContext is required when capturing display on desktop');
-          }
-          final source = await showDialog<DesktopCapturerSource>(
-            context: desktopCaptureContext,
-            builder: (context) => ScreenSelectDialog(),
-          );
-          if (source == null) {
-            _context._logger.fine('desktop screen capture cancelled by user');
-            return null;
-          }
-          final videoConstraints = Map<String, dynamic>.from((displayConstraints['video'] as Map<String, dynamic>?) ?? <String, dynamic>{});
-          videoConstraints['deviceId'] = {'exact': source.id};
-          final mandatoryConstraints = Map<String, dynamic>.from((videoConstraints['mandatory'] as Map<String, dynamic>?) ?? <String, dynamic>{});
-          mandatoryConstraints.putIfAbsent('frameRate', () => 30.0);
-          videoConstraints['mandatory'] = mandatoryConstraints;
-          displayConstraints['video'] = videoConstraints;
-          displayConstraints['audio'] ??= true;
-          try {
-            webRTCHandle!.localStream = await navigator.mediaDevices.getDisplayMedia(displayConstraints);
-          } catch (error) {
-            _context._logger.severe('Failed to capture desktop display media: $error');
-            rethrow;
-          }
-        } else {
-          webRTCHandle!.localStream = await navigator.mediaDevices.getDisplayMedia(displayConstraints);
-        }
-      } else {
-        webRTCHandle!.localStream = await navigator.mediaDevices.getUserMedia(resolvedConstraints);
-      }
+      webRTCHandle!.localStream = await navigator.mediaDevices.getUserMedia(resolvedConstraints);
+
       if (_context._isUnifiedPlan && !_context._usePlanB) {
         _context._logger.finest('using unified plan');
         webRTCHandle!.localStream!.getTracks().forEach((element) async {

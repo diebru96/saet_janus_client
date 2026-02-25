@@ -93,19 +93,9 @@ class JanusSession {
     JanusPlugin plugin;
     if (T == JanusVideoRoomPlugin) {
       plugin = JanusVideoRoomPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusVideoCallPlugin) {
-      plugin = JanusVideoCallPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusStreamingPlugin) {
+    }else if (T == JanusStreamingPlugin) {
       plugin = JanusStreamingPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusAudioBridgePlugin) {
-      plugin = JanusAudioBridgePlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusTextRoomPlugin) {
-      plugin = JanusTextRoomPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusEchoTestPlugin) {
-      plugin = JanusEchoTestPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusSipPlugin) {
-      plugin = JanusSipPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else {
+    }else {
       throw UnimplementedError('''This Plugin is not defined kindly refer to Janus Server Docs
       make sure you specify the type of plugin you want to attach like session.attach<JanusVideoRoomPlugin>();
       ''');
@@ -136,19 +126,9 @@ class JanusSession {
     Map<String, dynamic>? response;
     if (T == JanusVideoRoomPlugin) {
       plugin = JanusVideoRoomPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusVideoCallPlugin) {
-      plugin = JanusVideoCallPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
     } else if (T == JanusStreamingPlugin) {
       plugin = JanusStreamingPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusAudioBridgePlugin) {
-      plugin = JanusAudioBridgePlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusTextRoomPlugin) {
-      plugin = JanusTextRoomPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusEchoTestPlugin) {
-      plugin = JanusEchoTestPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else if (T == JanusSipPlugin) {
-      plugin = JanusSipPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    } else {
+    }  else {
       throw UnimplementedError('''This Plugin is not defined kindly refer to Janus Server Docs
       make sure you specify the type of plugin you want to attach like session.attach<JanusVideoRoomPlugin>();
       ''');

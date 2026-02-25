@@ -27,21 +27,11 @@ part 'janus_plugin.dart';
 
 part './utils.dart';
 
-part './wrapper_plugins/janus_video_call_plugin.dart';
-
-part './wrapper_plugins/janus_sip_plugin.dart';
-
 part './wrapper_plugins/janus_video_room_plugin.dart';
 
 part 'interfaces/typed_event.dart';
 
-part './wrapper_plugins/janus_audio_bridge_plugin.dart';
-
 part './wrapper_plugins/janus_streaming_plugin.dart';
-
-part './wrapper_plugins/janus_text_room_plugin.dart';
-
-part './wrapper_plugins/janus_echo_test_plugin.dart';
 
 part './interfaces/video_room/video_room_list_response.dart';
 
@@ -130,8 +120,6 @@ part './interfaces/sip/events/sip_hangup_event.dart';
 part './interfaces/sip/events/sip_proceeding_event.dart';
 
 part './interfaces/sip/events/sip_calling_event.dart';
-
-part './widgets/screen_select.dart';
 
 class JanusClient {
   late JanusTransport _transport;

@@ -31,6 +31,7 @@ With Flutter there are 2 core dependencies that are janus_client and flutter_web
    ```json
     {"janus":"createwatch","id": "camId", "transaction":"rand","token":"videoProxyToken","apisecret":"videoProxyToken", ""}
     ```
+    This post returns sessionId, handleId, streamHeight and streamWidth
 
     OR
 

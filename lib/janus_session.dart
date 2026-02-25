@@ -15,20 +15,26 @@ class JanusSession {
     _transport = transport;
   }
 
-  Future<JanusPlugin?> createAndWatch(int camId) async {
+  Future<JanusSessionPlugin?> createAndWatch(int camId) async {
     try {
       print("FACCIO CREATE AND WATCH VIDEO CON CAMID: $camId");
       String transaction = getUuid().v4();
       Map<String, dynamic> request = {"janus": "createwatch", "transaction": transaction, "id": camId, ..._context._tokenMap, ..._context._apiMap}
         ..removeWhere((key, value) => value == null);
       Map<String, dynamic>? response;
+      int height = 0;
+      int width = 0;
       if (_transport is RestJanusTransport) {
         RestJanusTransport rest = (_transport as RestJanusTransport);
         response = (await rest.post(request)) as Map<String, dynamic>?;
+
         if (response != null) {
           if (response.containsKey('janus')) {
             _sessionId = response['session_id'];
             _handleId = response['handle_id'];
+            height = response['height'] ?? 0;
+            width = response['width'] ?? 0;
+
             rest.sessionId = sessionId;
             print("arrivato sessionId: $_sessionId");
 
@@ -39,8 +45,11 @@ class JanusSession {
           throw "Janus Server not live or incorrect url/path specified";
         }
       }
-      if (_handleId != null) return attachWatch<JanusStreamingPlugin>(_handleId!);
-      _keepAlive();
+      if (_handleId != null) {
+        JanusPlugin? plugin = await attachWatch<JanusStreamingPlugin>(_handleId!);
+        return JanusSessionPlugin(session: this, plugin: plugin, height: height, width: width);
+      }
+      //_keepAlive(); //==> gestito tramite polling
     } on WebSocketChannelException catch (e) {
       throw "Connection to given url can't be established\n reason:-" + e.message!;
     } catch (e) {
@@ -93,9 +102,9 @@ class JanusSession {
     JanusPlugin plugin;
     if (T == JanusVideoRoomPlugin) {
       plugin = JanusVideoRoomPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    }else if (T == JanusStreamingPlugin) {
+    } else if (T == JanusStreamingPlugin) {
       plugin = JanusStreamingPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    }else {
+    } else {
       throw UnimplementedError('''This Plugin is not defined kindly refer to Janus Server Docs
       make sure you specify the type of plugin you want to attach like session.attach<JanusVideoRoomPlugin>();
       ''');
@@ -128,7 +137,7 @@ class JanusSession {
       plugin = JanusVideoRoomPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
     } else if (T == JanusStreamingPlugin) {
       plugin = JanusStreamingPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
-    }  else {
+    } else {
       throw UnimplementedError('''This Plugin is not defined kindly refer to Janus Server Docs
       make sure you specify the type of plugin you want to attach like session.attach<JanusVideoRoomPlugin>();
       ''');

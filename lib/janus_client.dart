@@ -91,7 +91,7 @@ class JanusClient {
   late JanusTransport _transport;
   String? _apiSecret;
   String? _token;
-  late Duration _pollingInterval;
+  //late Duration _pollingInterval;
   late bool _withCredentials;
   late int? _maxEvent;
   late List<RTCIceServer>? _iceServers = [];
@@ -154,9 +154,9 @@ class JanusClient {
     _withCredentials = withCredentials;
     _isUnifiedPlan = isUnifiedPlan;
     _token = token;
-    _pollingInterval = pollingInterval ?? Duration(seconds: 1);
+    //_pollingInterval = pollingInterval ?? Duration(seconds: 1);
     _usePlanB = usePlanB;
-    this._pollingInterval = pollingInterval ?? Duration(seconds: 1);
+    //this._pollingInterval = pollingInterval ?? Duration(seconds: 1);
     if (logger == null) {
       _logger = Logger.detached(loggerName);
       _logger.level = _loggerLevel;
@@ -186,8 +186,8 @@ class JanusClient {
     _logger.fine("fine message");
     JanusSession session = JanusSession(refreshInterval: _refreshInterval, transport: _transport, context: this);
     try {
-      JanusPlugin? plugin = await session.createAndWatch(camId);
-      return JanusSessionPlugin(session: session, plugin: plugin);
+      JanusSessionPlugin? sessionPlugin = await session.createAndWatch(camId);
+      return sessionPlugin;
     } catch (e) {
       _logger.severe(e);
     }
@@ -204,5 +204,7 @@ class JanusClient {
 class JanusSessionPlugin {
   JanusSession? session;
   JanusPlugin? plugin;
-  JanusSessionPlugin({this.session, this.plugin});
+  int height = 0;
+  int width = 0;
+  JanusSessionPlugin({this.session, this.plugin, this.height = 0, this.width = 0});
 }

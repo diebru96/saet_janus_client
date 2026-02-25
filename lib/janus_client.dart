@@ -17,8 +17,6 @@ import 'package:flutter/material.dart';
 
 part './interfaces/janus_client.dart';
 
-part './interfaces/text_room/text_room.dart';
-
 part 'janus_session.dart';
 
 part 'janus_transport.dart';
@@ -53,20 +51,6 @@ part './interfaces/video_room/events/video_room_new_publisher_event.dart';
 
 part './interfaces/video_room/events/video_room_event.dart';
 
-part './interfaces/video_call/events/video_call_accepted_event.dart';
-
-part './interfaces/video_call/events/video_call_calling_event.dart';
-
-part './interfaces/video_call/events/video_call_event.dart';
-
-part './interfaces/video_call/events/video_call_hangup_event.dart';
-
-part './interfaces/video_call/events/video_call_incoming_call_event.dart';
-
-part './interfaces/video_call/events/video_call_registered_event.dart';
-
-part './interfaces/video_call/events/video_call_registered_list_event.dart';
-
 part './interfaces/streaming/create_media_item.dart';
 
 part './interfaces/streaming/streaming_mount.dart';
@@ -80,24 +64,6 @@ part './interfaces/streaming/streaming_mount_point_info.dart';
 part './interfaces/streaming/events/streaming_plugin_preparing_event.dart';
 
 part './interfaces/streaming/events/streaming_plugin_stopping_event.dart';
-
-part './interfaces/audio_bridge/audio_room_created_response.dart';
-
-part './interfaces/audio_bridge/rtp_forward_stopped.dart';
-
-part './interfaces/audio_bridge/rtp_forwarder_created.dart';
-
-part './interfaces/audio_bridge/events/audio_bridge_configured_event.dart';
-
-part './interfaces/audio_bridge/events/audio_bridge_event.dart';
-
-part './interfaces/audio_bridge/events/audio_bridge_talking_event.dart';
-
-part './interfaces/audio_bridge/events/audio_bridge_destroyed_event.dart';
-
-part './interfaces/audio_bridge/events/audio_bridge_joined_event.dart';
-
-part './interfaces/audio_bridge/events/audio_bridge_leaving_event.dart';
 
 part './interfaces/sip/events/sip_registered_event.dart';
 

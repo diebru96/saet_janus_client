@@ -1,126 +1,127 @@
-# janus_client 
-[![januscaler](https://img.shields.io/badge/powered_by-JanuScaler-b?style=for-the-badge&logo=Januscaler&logoColor=%238884ED&label=Powered%20By&labelColor=white&color=%238884ED)](https://januscaler.com)  
+# saet janus client
+## USAGE
 
-[![pub package](https://img.shields.io/pub/v/janus_client.svg)](https://pub.dartlang.org/packages/janus_client)[![Gitter](https://badges.gitter.im/flutter_janus_client/Lobby.svg)](https://gitter.im/flutter_janus_client/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-17-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
+This file explains how to instantiate and use Saet janus WebRTC streaming.
+With Flutter there are 2 core dependencies that are janus_client and flutter_web_rtc
 
-It is a feature rich flutter package, which offers all webrtc operations supported by [Janus: the general purpose WebRTC server](https://janus.conf.meetecho.com/),
-it easily integrates into your flutter application and allows you to build webrtc features and functionality with clean and maintainable code.
+## Steps overview
 
-> [!NOTE]
-> ## What it will do?
-> - It will help you in establishing communication with Janus server using either REST or Websocket depending on what you prefer 
-> - It will provide you meaningful APIs for individual plugins so you can express your app logic without worrying about internals
-> ## What it will not do?
-> It will not manage every aspect of WebRTC for you by that we mean we only provide core functionalities and features when it comes to WebRTC, since this library uses flutter_webrtc for managing all of webrtc stack so you will need to refer its documentation when there's some use cases which we do not cover or does not exist in examples. This is done intentionally by design to give developers complete flexibility while also making sure library is lightweight and does not become a bloatware.
-A classic example of that would be changing output device on a native device for example you want to switch from speaker to headsets or bluetooth audio device you will need to use `flutter_webrtc`'s `Helper` utility class:-   
->```dart 
->Helper.selectAudioOutput(deviceIdOfBluetoothDevice) 
->``` 
+1. Acquire videoproxy configuration
+   - Fetch URL, token, STUN/TURN by calling HTTP GET `/videocloud/$deviceId/facile/$mac/info` per FACILE,`/videocloud/$deviceId/hicloud/$mac/info` per
+
+2. Create JanusClient (Only for Flutter with package JanusClient)
+   - ```dart
+   final janusClient = JanusClient(
+     transport: RestJanusTransport(url: state.videoproxyInfo?.videoproxyUrl ?? ""),
+     withCredentials: true,
+     token: state.videoproxyInfo?.videoProxyToken ?? "",
+     apiSecret: state.videoproxyInfo?.videoProxyToken ?? "",
+     iceServers: [
+       RTCIceServer(
+         urls: state.videoproxyInfo!.turnServer!.url,
+         username: state.videoproxyInfo!.turnServer!.username,
+         credential: state.videoproxyInfo!.turnServer!.credential,
+       ),
+       RTCIceServer(urls: state.videoproxyInfo!.stunServer ?? ""),
+     ],
+   );
+   ```
+3. You can either Create janus Session, plugin and ask to watch camId all in one with 
+   - HTTP POST a `/janus` con payload:
+   ```json
+    {"janus":"createwatch","id": "camId", "transaction":"rand","token":"videoProxyToken","apisecret":"videoProxyToken", ""}
+    ```
+
+    OR
+
+3. Create janus Session
+   - HTTP POST a `/janus` con payload:
+   ```json
+    {"janus":"create","transaction":"rand","token":"videoProxyToken","apisecret":"videoProxyToken"}
+    ```
+    The Create will answer (in case of success)
+    ```json
+     {"data":{"id": "$sessionId"}}
+    ```
+    We will need the `sessionId` to call the attach.
+
+4. Attach janus plugin
+    - HTTP POST a `/janus/$sessionId` con payload:
+     ```json
+        {"janus":"attach","transaction":"rand","apisecret":"videoProxyToken","token":"videoProxyToken","session_id":$sessionId,"plugin":"janus.plugin.streaming"}
+     ```
+     This call will answer with an `handleId`
 
 
-## [Demo of JanusClient](https://januscaler.github.io/flutter_janus_client/)
+5. Concurrently to theese operation we should start a longpolling (in Flutter it is handled by janus_client).
+    All the async comunication between videocloud and frontend will be handled by this longpoll (for example we'll receive the jsep here)
+    - it consists of a HTTP GET to ... that is performed again and again everytime it receive an answer (N.B. the answer is delayed, so it may take up to 30 sec)
 
-## [APIReference](https://januscaler.github.io/flutter_janus_client/doc/api/)
+6.  In Flutter we have to listen to the messages coming out of this longpolling and we do that by listening toPlugin messages.
+     - Plugin messages: handle `plugindata` and `jsep`. When receiving JSEP:
+     - `plugin.handleRemoteJsep(...)`
+     - `plugin.createAnswer()` ---> This operation and HandleRemoteJsep are used to complete the P2P connection with the cam.
+     - `createAnswer()` will return a `RTCSessionDescription` that we will need to Start the video.
 
-## [Wiki](https://github.com/januscaler/flutter_janus_client/wiki)
+7. We should also listen to remote stream change in order to instantiate our remoteRender
+   - Mobile: `plugin.remoteStream` → listen and update `mediaStream` in state (`listenToRemoteStreamMobile()`).
+   - Web: `peerConnection.onTrack` → use `event.streams[0]` as `mediaStream` (`listenWebToPeerConnectionOnTrack()`).
 
-## [Take away apple specific pain for building flutter app](https://github.com/januscaler/flutter_janus_client/wiki/Take-away-Apple-IOS-and-macOS-related-pain-from-me-%F0%9F%92%AF-(building-for-apple))
 
-## [screen share example](https://github.com/januscaler/screenshare_example)
+8. Watch request: A request to start watching a camera (camId equivale al numero della telecamera che si vuole guardare)
+    - HTTP POST a `/janus/$sessionId/$handleId` con payload:
+    ```json
+     {
+       "request": "watch",
+       "id": camId,
+       "offer_audio": false,
+       "offer_video": true,
+       "transaction":"rand",
+       "token":"videoProxyToken",
+       "apisecret":"videoProxyToken"
+     }
+    ```
+    -  After calling this Watch we will start receiving the JSEP throgh the longpolling.
 
-## News & Updates
-- Introduced support for simulcast
-- videoroom and screenshare improvements (screenshare tested on android and chrome)
-- sip plugin wrapper added with sip calling example
-- Added errorHandler for typedMessage Stream for better development flow
-- Just like new flutter version comes With desktop support out of the box
-- All major plugins fully support unified plan
-- Typed examples updated with null safety and latest dart constraints
-- Introduced plugin specific wrapper classes with respective operation methods for rich development experience
-- Introduced typed events (Class Based Events) for brilliant auto completion support for IDE
-- Supports null-safety
+9. As soon as we receive the JSEP we will perform a configure and a start request
+    - HTTP POST a `/janus/$sessionId/$handleId` con payload:
+    ```json
+     {
+       "request": "configure", "min_delay": 60, "max_delay": 60,
+       "transaction":"rand",
+       "token":"videoProxyToken",
+       "apisecret":"videoProxyToken"
+     }
+    - HTTP POST a `/janus/$sessionId/$handleId` con payload:
+    ```json
+     {
+       "request": "start",
+       "jsep:": "RTCSessionDescription", --> quello che ritorna la richiesta CreateAnswer
+       "offer_audio": false,
+       "offer_video": true,
+       "transaction":"rand",
+       "token":"videoProxyToken",
+       "apisecret":"videoProxyToken"
+     }
 
-## Feature Status
-| Feature           | Support | Well Tested | Unified Plan | Example |
-|-------------------|---------|-------------|--------------|---------|
-| WebSocket         | Yes     | Yes         | -            | Yes     |
-| Rest/Http API     | Yes     | Yes         | -            | Yes     |
-| Video Room Plugin | Yes     | No         | Yes          | Yes     |
-| Video Call Plugin | Yes     | No          | Yes          | Yes     |
-| Streaming Plugin  | Yes     | No          | Yes          | Yes     |
-| Audio Room Plugin | Yes     | No          | Yes          | Yes     |
-| Sip Plugin        | Yes     | No          | Yes           | Yes      |
-| Text Room Plugin  | Yes     | No          | -          | Yes     |
-| ScreenSharing using VideoRoom plugin  | Yes     | No          | Yes          | Yes     |
+10. Render the stream in Flutter
+   - Initialize `RTCVideoRenderer`, set `srcObject` when `mediaStream` changes, and dispose:
+   ```dart
+   final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
+   await _remoteRenderer.initialize();
+   _remoteRenderer.srcObject = videoState.mediaStream;
+   // on dispose
+   _remoteRenderer.dispose();
+   ```
+   - Use `RTCVideoView(_remoteRenderer)` in the widget tree (see `VideoPanel`).
 
-# WebRTC Feature Support & Testing Matrix
+11. Stop and teardown
+   - To stop playback: `plugin.send(data: {"request": "stop"})` (`stopVideo()`). --> this is an HTTP POST exacly like start and watch
+   - To fully teardown: `plugin.dispose()` and `session.dispose()` and clear `mediaStream` (`destroy()`). --> They permorm a "destroy" HTTP request.
 
-| Feature        | Android  | iOS  | Windows  | Linux  | macOS  | Browser  |
-|---------------|---------|------|---------|--------|--------|---------|
-| **VideoRoom** | ✅ (🟢) | ✅ (🟡) | ✅ (🟡) | ✅ (🟡) | ✅ (🟢) | ✅ (🟢) |
-| **VideoCall** | ✅ (🟢) | ✅ (🟡) | ✅ (🟡) | ✅ (🟡) | ✅ (🟡) | ✅ (🟢) |
-| **SIP**       | ✅ (🟢) | ✅ (🟡) | ✅ (🟡) | ✅ (🟡) | ✅ (🟡) | ✅ (🟢) |
-| **AudioRoom** | ✅ (🟢) | ✅ (🟡) | ✅ (🟡) | ✅ (🟡) | ✅ (🟡) | ✅ (🟢) |
-| **Streaming** | ✅ (🟢) | ✅ (🟡) | ✅ (🟡) | ✅ (🟡) | ✅ (🟡) | ✅ (🟢) |
+---
 
-## Legend:
-- ✅ = Supported
-- ❌ =  Supported
-- 🟢 = Tested
-- 🟡 =  Not fully Tested
-
-## Contributors ✨
-
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/shivanshtalwar0"><img src="https://avatars.githubusercontent.com/u/26632663?v=4?s=100" width="100px;" alt="Shivansh Talwar"/><br /><sub><b>Shivansh Talwar</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=shivanshtalwar0" title="Code">💻</a> <a href="https://github.com/januscaler/flutter_janus_client/commits?author=shivanshtalwar0" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/kzawadi"><img src="https://avatars.githubusercontent.com/u/12481289?v=4?s=100" width="100px;" alt="Kelvin Zawadi"/><br /><sub><b>Kelvin Zawadi</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=kzawadi" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/LifeNow"><img src="https://avatars.githubusercontent.com/u/18676202?v=4?s=100" width="100px;" alt="Eugene"/><br /><sub><b>Eugene</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=LifeNow" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/igala"><img src="https://avatars.githubusercontent.com/u/454390?v=4?s=100" width="100px;" alt="Igal Avraham"/><br /><sub><b>Igal Avraham</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=igala" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="http://vigikaran.me/"><img src="https://avatars.githubusercontent.com/u/9039584?v=4?s=100" width="100px;" alt="Vigikaran"/><br /><sub><b>Vigikaran</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=vigikaran" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/UserSense"><img src="https://avatars.githubusercontent.com/u/65860664?v=4?s=100" width="100px;" alt="UserSense"/><br /><sub><b>UserSense</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=UserSense" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/baihua666"><img src="https://avatars.githubusercontent.com/u/5125983?v=4?s=100" width="100px;" alt="baihua666"/><br /><sub><b>baihua666</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/issues?q=author%3Abaihua666" title="Bug reports">🐛</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ngoluuduythai"><img src="https://avatars.githubusercontent.com/u/12238262?v=4?s=100" width="100px;" alt="ngoluuduythai"/><br /><sub><b>ngoluuduythai</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=ngoluuduythai" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://www.facebook.com/sakshamgupta12"><img src="https://avatars.githubusercontent.com/u/14076514?v=4?s=100" width="100px;" alt="Saksham Gupta"/><br /><sub><b>Saksham Gupta</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=sakshamgupta05" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/chu06"><img src="https://avatars.githubusercontent.com/u/129312223?v=4?s=100" width="100px;" alt="chu06"/><br /><sub><b>chu06</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=chu06" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/musagil"><img src="https://avatars.githubusercontent.com/u/7420090?v=4?s=100" width="100px;" alt="Musagil Musabayli"/><br /><sub><b>Musagil Musabayli</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=musagil" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/mazen930"><img src="https://avatars.githubusercontent.com/u/33043493?v=4?s=100" width="100px;" alt="Mazen Amr"/><br /><sub><b>Mazen Amr</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=mazen930" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Clon1998"><img src="https://avatars.githubusercontent.com/u/10357775?v=4?s=100" width="100px;" alt="Patrick Schmidt"/><br /><sub><b>Patrick Schmidt</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=Clon1998" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ivansapr"><img src="https://avatars.githubusercontent.com/u/4011122?v=4?s=100" width="100px;" alt="Ivan Saprykin"/><br /><sub><b>Ivan Saprykin</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=ivansapr" title="Code">💻</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Creiger"><img src="https://avatars.githubusercontent.com/u/14278509?v=4?s=100" width="100px;" alt="Lukas Hronec"/><br /><sub><b>Lukas Hronec</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=Creiger" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/dev-satoshi"><img src="https://avatars.githubusercontent.com/u/102169197?v=4?s=100" width="100px;" alt="Satoshi"/><br /><sub><b>Satoshi</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=dev-satoshi" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/emekalites"><img src="https://avatars.githubusercontent.com/u/6467687?v=4?s=100" width="100px;" alt="Chukwuemeka Ihedoro"/><br /><sub><b>Chukwuemeka Ihedoro</b></sub></a><br /><a href="https://github.com/januscaler/flutter_janus_client/commits?author=emekalites" title="Code">💻</a></td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
-
-## Wait there's more... The Javascript Client!
-If you loved the api style and architecture of flutter_janus_client and you wishing to have something similar for your next javascript project involving webrtc features.
-then worry not because we have got you covered. we have written wrapper on top of our good old `janus.js`, you might ask why? well the answer to that question is it does not support
-type bindings hence no rich ide support, so we proudly presents [typed_janus_js(feature rich promisified and reactive wrapper on top of janus.js)](https://github.com/flutterjanus/JanusJs)
-or you can straight away use it by installing from npm `npm i typed_janus_js`.
-
-## Donations 
-[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U7U11OZL8)  
-
-<a href="https://www.buymeacoffee.com/gr20hjk" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" style="height: 51px !important;width: 217px !important;" ></a>
+## Notes and best practices
+- Properly initialize and dispose the renderer; call `destroy()` on background/exit.
+- Handle session/plugin creation errors and loading/failure states.
+- On web, if the video starts muted, force-enable the video track after a short delay (see `listenWebToPeerConnectionOnTrack()`).

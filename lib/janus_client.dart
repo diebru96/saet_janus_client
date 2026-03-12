@@ -195,6 +195,20 @@ class JanusClient {
     return null;
   }
 
+  Future<JanusSessionPlugin?> createSessionAndWatchVideoRecorded(String hash, int sens, String time) async {
+    _logger.info("Creating Session");
+    _logger.fine("fine message");
+    JanusSession session = JanusSession(refreshInterval: _refreshInterval, transport: _transport, context: this);
+    try {
+      JanusSessionPlugin? sessionPlugin = await session.createAndWatchRecorded(hash, sens, time);
+      return sessionPlugin;
+    } catch (e) {
+      _logger.severe(e);
+    }
+    _logger.info("Session Created");
+    return null;
+  }
+
   /// Get janus server verbose information more like found on path `/info`
   Future<JanusClientInfo> getInfo() async {
     return JanusClientInfo.fromJson(await _transport.getInfo());

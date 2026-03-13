@@ -47,7 +47,7 @@ class JanusSession {
       }
       if (_handleId != null) {
         JanusPlugin? plugin = await attachWatch<JanusStreamingPlugin>(_handleId!);
-        return JanusSessionPlugin(session: this, plugin: plugin, height: height, width: width);
+        return JanusSessionPlugin(session: this, streamingPlugin: plugin, height: height, width: width);
       }
       //_keepAlive(); //==> gestito tramite polling
     } on WebSocketChannelException catch (e) {
@@ -76,6 +76,7 @@ class JanusSession {
           if (response.containsKey('janus')) {
             _sessionId = response['session_id'];
             _handleId = response['handle_id'];
+
             height = response['height'] ?? 0;
             width = response['width'] ?? 0;
 
@@ -90,8 +91,10 @@ class JanusSession {
         }
       }
       if (_handleId != null) {
-        JanusPlugin? plugin = await attachWatch<JanusStreamingPlugin>(_handleId!);
-        return JanusSessionPlugin(session: this, plugin: plugin, height: height, width: width);
+        JanusPlugin? streamingPlugin = await attachWatch<JanusStreamingPlugin>(_handleId!);
+        JanusPlugin? videomuxPlugin = JanusStreamingPlugin(transport: _transport, context: _context, handleId: response?['videomux_id'], session: this);
+
+        return JanusSessionPlugin(session: this, streamingPlugin: streamingPlugin, videomuxPlugin: videomuxPlugin, height: height, width: width);
       }
       //_keepAlive(); //==> gestito tramite polling
     } on WebSocketChannelException catch (e) {

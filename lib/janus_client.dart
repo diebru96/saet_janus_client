@@ -217,8 +217,10 @@ class JanusClient {
 
 class JanusSessionPlugin {
   JanusSession? session;
-  JanusPlugin? plugin;
+  JanusPlugin? streamingPlugin;
+  JanusPlugin? videomuxPlugin;
+
   int height = 0;
   int width = 0;
-  JanusSessionPlugin({this.session, this.plugin, this.height = 0, this.width = 0});
+  JanusSessionPlugin({this.session, this.streamingPlugin, this.videomuxPlugin, this.height = 0, this.width = 0});
 }

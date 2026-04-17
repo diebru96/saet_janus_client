@@ -107,13 +107,13 @@ class JanusClient {
   * */
   String get _dataChannelDefaultLabel => "JanusDataChannel";
 
-  Map get _apiMap => _withCredentials
+  Map<String, dynamic> get _apiMap => _withCredentials
       ? _apiSecret != null
           ? {"apisecret": _apiSecret}
           : {}
       : {};
 
-  Map get _tokenMap => _withCredentials
+  Map<String, dynamic> get _tokenMap => _withCredentials
       ? _token != null
           ? {"token": _token}
           : {}

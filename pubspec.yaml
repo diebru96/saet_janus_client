@@ -1,6 +1,6 @@
 name: janus_client
 description: A feature rich Janus Webrtc package
-version: 3.0.0
+version: 3.0.1
 homepage: https://github.com/shivanshtalwar0/flutter_janus_client
 
 environment:

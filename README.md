@@ -139,7 +139,8 @@ With Flutter there are 2 core dependencies that are janus_client and flutter_web
    - To fully teardown: `plugin.dispose()` and `session.dispose()` and clear `mediaStream` (`destroy()`). --> They permorm a "destroy" HTTP request.
 
 ---
-##VIDEO ALARMS VERIFICATIONS
+
+## VIDEO ALARMS VERIFICATIONS
 For video-alarms the process is basically the same.
 The short way is to use the createwatch call as in 3. 
    ```json

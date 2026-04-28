@@ -10,7 +10,8 @@ With Flutter there are 2 core dependencies that are janus_client and flutter_web
    - Fetch URL, token, STUN/TURN by calling HTTP GET `/videocloud/$deviceId/facile/$mac/info` per FACILE,`/videocloud/$deviceId/hicloud/$mac/info` per
 
 2. Create JanusClient (Only for Flutter with package JanusClient)
-   - ```dart
+   -
+   ```dart
    final janusClient = JanusClient(
      transport: RestJanusTransport(url: state.videoproxyInfo?.videoproxyUrl ?? ""),
      withCredentials: true,
@@ -32,6 +33,23 @@ With Flutter there are 2 core dependencies that are janus_client and flutter_web
     {"janus":"createwatch","id": "camId", "transaction":"rand","token":"videoProxyToken","apisecret":"videoProxyToken", ""}
     ```
     This post returns sessionId, handleId, streamHeight and streamWidth
+    The usage in your dart code is the following
+      ```dart
+       janusClient.createSessionAndWatchVideo(camNumber);
+      ```
+   That answers with object JanusSessionPlugin
+   ```dart
+   class JanusSessionPlugin {
+     JanusSession? session;
+     JanusPlugin? streamingPlugin;
+     JanusPlugin? videomuxPlugin;
+
+     int height = 0;
+     int width = 0;
+     JanusSessionPlugin({this.session, this.streamingPlugin, this.videomuxPlugin, this.height = 0, this.width = 0});
+   }   
+   ```
+   videoMuxPlugin will always be null when the answer is coming from createSessionAndWatchVideo
 
     OR
 
@@ -121,6 +139,55 @@ With Flutter there are 2 core dependencies that are janus_client and flutter_web
    - To fully teardown: `plugin.dispose()` and `session.dispose()` and clear `mediaStream` (`destroy()`). --> They permorm a "destroy" HTTP request.
 
 ---
+##VIDEO ALARMS VERIFICATIONS
+For video-alarms the process is basically the same.
+The short way is to use the createwatch call as in 3. 
+   ```json
+    {"janus":"createwatch","id": "camId", "hash": hash, "sens": sens, "time": time, "transaction":"rand","token":"videoProxyToken","apisecret":"videoProxyToken"}
+   ```
+ you can call this from your code with
+   ```dart
+      await janusClient.createSessionAndWatchVideoRecorded(
+            state.recordedVideoData!.video,
+            state.recordedVideoData!.sens,
+            state.recordedVideoData!.time,
+          )   
+   ```
+   That answers with object JanusSessionPlugin that will always have the param videomuxPlugin populated
+
+   ```dart
+   class JanusSessionPlugin {
+     JanusSession? session;
+     JanusPlugin? streamingPlugin;
+     JanusPlugin? videomuxPlugin;
+
+     int height = 0;
+     int width = 0;
+     JanusSessionPlugin({this.session, this.streamingPlugin, this.videomuxPlugin, this.height = 0, this.width = 0});
+   }   
+   ```
+ this call must be used in step 3. The following steps are the same as opening the cam in streaming. 
+
+ Once the video is playing we can send 3 commands through the videomux plugin.
+ 1.REWIND to restart the video from the beginning
+ ```dart
+  Future<void> rewindRecordedVideo() async {
+    await state.janusVideoState?.videoMuxPlugin?.send(data: {"videomux": "rewind"});
+  }
+ ```
+2.PAUSE
+ ```dart
+  Future<void> pauseVideo() async {
+    await state.janusVideoState?.videoMuxPlugin?.send(data: {"videomux": "pause"});
+  }
+ ```
+3.RESUME
+```dart
+  Future<void> resumeVideo() async {
+    await state.janusVideoState?.videoMuxPlugin?.send(data: {"videomux": "resume"});
+  }
+```
+
 
 ## Notes and best practices
 - Properly initialize and dispose the renderer; call `destroy()` on background/exit.

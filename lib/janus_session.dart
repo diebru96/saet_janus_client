@@ -151,6 +151,8 @@ class JanusSession {
       plugin = JanusVideoRoomPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
     } else if (T == JanusStreamingPlugin) {
       plugin = JanusStreamingPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
+    } else if (T == VideomuxPlugin) {
+      plugin = VideomuxPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
     } else {
       throw UnimplementedError('''This Plugin is not defined kindly refer to Janus Server Docs
       make sure you specify the type of plugin you want to attach like session.attach<JanusVideoRoomPlugin>();
@@ -184,6 +186,8 @@ class JanusSession {
       plugin = JanusVideoRoomPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
     } else if (T == JanusStreamingPlugin) {
       plugin = JanusStreamingPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
+    } else if (T == VideomuxPlugin) {
+      plugin = VideomuxPlugin(transport: _transport, context: _context, handleId: handleId, session: this);
     } else {
       throw UnimplementedError('''This Plugin is not defined kindly refer to Janus Server Docs
       make sure you specify the type of plugin you want to attach like session.attach<JanusVideoRoomPlugin>();

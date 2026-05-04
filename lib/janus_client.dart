@@ -31,6 +31,8 @@ part 'interfaces/typed_event.dart';
 
 part './wrapper_plugins/janus_streaming_plugin.dart';
 
+part './wrapper_plugins/janus_videomux_plugin.dart';
+
 part './interfaces/video_room/video_room_list_response.dart';
 
 part './interfaces/video_room/video_room_list_participants_response.dart';

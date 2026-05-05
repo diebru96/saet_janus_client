@@ -121,12 +121,12 @@ class VideomuxPlugin extends JanusPlugin {
 
   /// Starts playback after a successful [watchStream] negotiation.
   Future<void> startStream() async {
-    if (webRTCHandle?.peerConnection?.iceConnectionState == RTCIceConnectionState.RTCIceConnectionStateConnected) {
-      await send(data: {"request": "start"});
-    } else {
-      RTCSessionDescription answer = await createAnswer();
-      await send(data: {"request": "start"}, jsep: answer);
-    }
+    // if (webRTCHandle?.peerConnection?.iceConnectionState == RTCIceConnectionState.RTCIceConnectionStateConnected) {
+    //   await send(data: {"request": "start"});
+    // } else {
+    //   RTCSessionDescription answer = await createAnswer();
+    //   await send(data: {"request": "start"}, jsep: answer);
+    // }
   }
 
   /// Temporarily pauses media delivery while keeping the session alive.
@@ -141,7 +141,7 @@ class VideomuxPlugin extends JanusPlugin {
 
   /// Switches the current subscription to another mount point.
   Future<void> switchStream(int id) async {
-    await send(data: {"request": "switch", "id": id});
+    //  await send(data: {"request": "switch", "id": id});
   }
 
   bool _onCreated = false;
@@ -158,13 +158,13 @@ class VideomuxPlugin extends JanusPlugin {
       TypedEvent<JanusEvent> typedEvent = TypedEvent<JanusEvent>(event: JanusEvent.fromJson(event.event), jsep: event.jsep);
       var data = typedEvent.event.plugindata?.data;
       if (data == null) return;
-      if (data["streaming"] == "event" && data["result"] != null && data["result"]['status'] == 'preparing') {
+      if (data["videomux"] == "event" && data["result"] != null && data["result"]['status'] == 'preparing') {
         typedEvent.event.plugindata?.data = StreamingPluginPreparingEvent();
         _typedMessagesSink?.add(typedEvent);
-      } else if (data["streaming"] == "event" && data["result"] != null && data["result"]['status'] == 'stopping') {
+      } else if (data["videomux"] == "event" && data["result"] != null && data["result"]['status'] == 'stopping') {
         typedEvent.event.plugindata?.data = StreamingPluginStoppingEvent();
         _typedMessagesSink?.add(typedEvent);
-      } else if (data['streaming'] == 'event' && (data['error_code'] != null || data['result']?['code'] != null)) {
+      } else if (data['videomux'] == 'event' && (data['error_code'] != null || data['result']?['code'] != null)) {
         _typedMessagesSink?.addError(JanusError.fromMap(data));
       }
     });

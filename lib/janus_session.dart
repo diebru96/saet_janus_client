@@ -221,7 +221,16 @@ class JanusSession {
     plugin.handleId = handleId;
     _pluginHandles[handleId] = plugin;
     try {
-      await plugin._init();
+      if (JanusPlugins.VIDEOMUX == plugin.plugin) {
+        _context._logger.info('created videomux plugin handle with id: $handleId');
+        //non faccio il metodo iniit per videomux perchè non è necessario, il plugin è pronto all'uso dopo l'attach e non richiede negoziazione SDP
+      } else if (JanusPlugins.STREAMING == plugin.plugin) {
+        _context._logger.info('created streaming plugin handle with id: $handleId');
+        await plugin._init();
+      } else if (JanusPlugins.VIDEO_ROOM == plugin.plugin) {
+        _context._logger.info('created video room plugin handle with id: $handleId');
+        await plugin._init();
+      }
     } on MissingPluginException {
       _context._logger.info('Platform exception: i believe you are trying in unit tests, platform specific api not accessible');
     }

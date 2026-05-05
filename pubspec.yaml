@@ -1,6 +1,6 @@
 name: janus_client
 description: Saet take on janusclient
-version: 3.1.0
+version: 3.1.2
 homepage: https://github.com/shivanshtalwar0/flutter_janus_client
 
 environment:

@@ -7,7 +7,7 @@ With Flutter there are 2 core dependencies that are janus_client and flutter_web
 ## Steps overview
 
 1. Acquire videoproxy configuration
-   - Fetch URL, token, STUN/TURN by calling HTTP GET `/videocloud/$deviceId/facile/$mac/info` per FACILE,`/videocloud/$deviceId/hicloud/$mac/info` per
+   - Fetch URL, token, STUN/TURN by calling HTTP GET `/videocloud/$deviceId/facile/$mac/info` for FACILE,`/videocloud/$deviceId/hicloud/$mac/info` for HUCLOUD
 
 2. Create JanusClient (Only for Flutter with package JanusClient)
    -

@@ -517,7 +517,16 @@ class JanusPlugin {
   StreamController<RTCDataChannelMessage>? _dataStreamController;
   StreamController<RTCDataChannelState>? _onDataStreamController;
 
-  StreamSink? get _typedMessagesSink => _typedMessagesStreamController?.sink;
+  StreamSink? get _typedMessagesSink {
+    if (_disposed || _typedMessagesStreamController == null || _typedMessagesStreamController!.isClosed) return null;
+    return _typedMessagesStreamController!.sink;
+  }
+
+  /// Whether [dispose] has been called on this plugin instance.
+  bool _disposed = false;
+
+  /// Returns `true` if this plugin has been disposed and should no longer emit events.
+  bool get isDisposed => _disposed;
 
   int _pollingRetries = 0;
   Timer? _pollingTimer;
@@ -555,7 +564,9 @@ class JanusPlugin {
     _context._logger.finest('webRTC stack intialized');
     RTCPeerConnection peerConnection = await createPeerConnection(_webRtcConfiguration!, {});
     peerConnection.onRenegotiationNeeded = () {
-      _renegotiationNeededController?.sink.add(true);
+      if (!_disposed && _renegotiationNeededController != null && !_renegotiationNeededController!.isClosed) {
+        _renegotiationNeededController!.sink.add(true);
+      }
     };
     //unified plan webrtc tracks emitter
     _handleUnifiedWebRTCTracksEmitter(peerConnection);
@@ -616,7 +627,9 @@ class JanusPlugin {
       //  });
     } else if (_transport is WebSocketJanusTransport) {
       _wsStreamSubscription = (_transport as WebSocketJanusTransport).stream.listen((event) {
-        _streamController!.add(parse(event));
+        if (!_disposed && _streamController != null && !_streamController!.isClosed) {
+          _streamController!.add(parse(event));
+        }
       });
     }
   }
@@ -670,22 +683,31 @@ class JanusPlugin {
             : event.receiver != null
                 ? event.receiver?.track?.id
                 : event.track.id;
-        _remoteTrackStreamController?.add(RemoteTrack(track: event.track, mid: mid, flowing: true));
+        if (!_disposed && _remoteTrackStreamController != null && !_remoteTrackStreamController!.isClosed) {
+          _remoteTrackStreamController!.add(RemoteTrack(track: event.track, mid: mid, flowing: true));
+        }
         event.track.onEnded = () async {
-          // Notify the application
-          if (!_remoteTrackStreamController!.isClosed) _remoteTrackStreamController?.add(RemoteTrack(track: event.track, mid: mid, flowing: false));
+          if (!_disposed && _remoteTrackStreamController != null && !_remoteTrackStreamController!.isClosed) {
+            _remoteTrackStreamController!.add(RemoteTrack(track: event.track, mid: mid, flowing: false));
+          }
         };
         event.track.onMute = () async {
-          if (!_remoteTrackStreamController!.isClosed) _remoteTrackStreamController?.add(RemoteTrack(track: event.track, mid: mid, flowing: false));
+          if (!_disposed && _remoteTrackStreamController != null && !_remoteTrackStreamController!.isClosed) {
+            _remoteTrackStreamController!.add(RemoteTrack(track: event.track, mid: mid, flowing: false));
+          }
         };
         event.track.onUnMute = () async {
-          if (!_remoteTrackStreamController!.isClosed) _remoteTrackStreamController?.add(RemoteTrack(track: event.track, mid: mid, flowing: true));
+          if (!_disposed && _remoteTrackStreamController != null && !_remoteTrackStreamController!.isClosed) {
+            _remoteTrackStreamController!.add(RemoteTrack(track: event.track, mid: mid, flowing: true));
+          }
         };
       };
     }
     // source for onRemoteStream
     peerConnection.onAddStream = (mediaStream) {
-      _remoteStreamController!.sink.add(mediaStream);
+      if (!_disposed && _remoteStreamController != null && !_remoteStreamController!.isClosed) {
+        _remoteStreamController!.sink.add(mediaStream);
+      }
     };
   }
 
@@ -708,7 +730,9 @@ class JanusPlugin {
           WebSocketJanusTransport ws = (_transport as WebSocketJanusTransport);
           response = (await ws.send(request, handleId: handleId)) as Map<String, dynamic>;
         }
-        _streamController!.sink.add(response);
+        if (!_disposed && _streamController != null && !_streamController!.isClosed) {
+          _streamController!.sink.add(response);
+        }
       }
     };
   }
@@ -738,6 +762,7 @@ class JanusPlugin {
         return false;
       }
     }).listen((event) {
+      if (_disposed || _messagesStreamController == null || _messagesStreamController!.isClosed) return;
       var jsep = event['jsep'];
       if (jsep != null) {
         _messagesStreamController!.sink.add(EventMessage(event: event, jsep: RTCSessionDescription(jsep['sdp'], jsep['type'])));
@@ -760,8 +785,11 @@ class JanusPlugin {
 
   /// Pulls pending Janus events when REST polling is active.
   _handlePolling() async {
+    if (_disposed) return;
     print("FACCIO HANDLE POLLING");
-    _messagesStreamController?.sink.add(EventMessage(event: {"startPolling": true}, jsep: null));
+    if (_messagesStreamController != null && !_messagesStreamController!.isClosed) {
+      _messagesStreamController!.sink.add(EventMessage(event: {"startPolling": true}, jsep: null));
+    }
 
     if (!pollingActive) return;
     if (_session!.sessionId == null) {
@@ -781,6 +809,7 @@ class JanusPlugin {
         queryParameters["apisecret"] = _context._apiSecret!;
       }
       var response = (await http.get(Uri.https(extractDomainFromUrl(_transport!.url!), "janus/" + _session!.sessionId.toString(), queryParameters)));
+      if (_disposed) return;
       if (response.statusCode != 200 || response.body.isEmpty) {
         print("POLLING FAILED");
         var errorMessage = "polling is failed from janus with error code : ${response.statusCode} , header : ${response.headers}";
@@ -795,7 +824,7 @@ class JanusPlugin {
         var decodedResponse = parse(response.body);
         List<dynamic> json = ((decodedResponse != null && decodedResponse.isNotEmpty)) ? decodedResponse : [];
         json.forEach((element) {
-          if (!_streamController!.isClosed) {
+          if (!_disposed && _streamController != null && !_streamController!.isClosed) {
             _streamController!.add(element);
           } else {
             pollingActive = false;
@@ -806,7 +835,9 @@ class JanusPlugin {
       } catch (e) {
         _context._logger.severe("Errore nel parsing del polling");
       }
-      _handlePolling();
+      if (!_disposed && pollingActive) {
+        _handlePolling();
+      }
 
       // Future.delayed(Duration(milliseconds: 100)).then((_) => _handlePolling());
       return;
@@ -891,6 +922,7 @@ class JanusPlugin {
 
   /// Disposes timers, stream controllers, transports, and media tied to this plugin.
   Future<void> dispose() async {
+    _disposed = true;
     this.pollingActive = false;
     _pollingTimer?.cancel();
     _streamController?.close();
@@ -904,13 +936,24 @@ class JanusPlugin {
     _renegotiationNeededController?.close();
     _wsStreamSubscription?.cancel();
     await stopAllTracks(webRTCHandle?.localStream);
-    (await webRTCHandle?.peerConnection?.getTransceivers())?.forEach((element) async {
-      await element.stop();
-    });
-    await webRTCHandle?.peerConnection?.close();
+    if (webRTCHandle?.peerConnection != null) {
+      try {
+        final transceivers = await webRTCHandle!.peerConnection!.getTransceivers();
+        for (final transceiver in transceivers) {
+          try {
+            await transceiver.stop();
+          } catch (_) {}
+        }
+      } catch (_) {}
+      try {
+        await webRTCHandle!.peerConnection!.close();
+      } catch (_) {}
+      try {
+        await webRTCHandle!.peerConnection!.dispose();
+      } catch (_) {}
+    }
     await webRTCHandle?.remoteStream?.dispose();
     await webRTCHandle?.localStream?.dispose();
-    await webRTCHandle?.peerConnection?.dispose();
     webRTCHandle?.localStream = null;
     webRTCHandle?.remoteStream = null;
     webRTCHandle?.peerConnection = null;
@@ -1103,7 +1146,9 @@ class JanusPlugin {
                   streams: [webRTCHandle!.localStream!], direction: transceiverDirection, sendEncodings: element.kind == 'video' ? simulcastSendEncodings : null));
         });
       } else {
-        _localStreamController!.sink.add(webRTCHandle!.localStream);
+        if (!_disposed && _localStreamController != null && !_localStreamController!.isClosed) {
+          _localStreamController!.sink.add(webRTCHandle!.localStream);
+        }
         await webRTCHandle!.peerConnection!.addStream(webRTCHandle!.localStream!);
       }
       return webRTCHandle!.localStream;

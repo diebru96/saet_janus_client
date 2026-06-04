@@ -183,12 +183,12 @@ class JanusClient {
     return session;
   }
 
-  Future<JanusSessionPlugin?> createSessionAndWatchVideo(int camId) async {
+  Future<JanusSessionPlugin?> createSessionAndWatchVideo(int camId, {int hd = 0}) async {
     _logger.info("Creating Session");
     _logger.fine("fine message");
     JanusSession session = JanusSession(refreshInterval: _refreshInterval, transport: _transport, context: this);
     try {
-      JanusSessionPlugin? sessionPlugin = await session.createAndWatch(camId);
+      JanusSessionPlugin? sessionPlugin = await session.createAndWatch(camId, hd: hd);
       return sessionPlugin;
     } catch (e) {
       _logger.severe(e);
@@ -197,12 +197,12 @@ class JanusClient {
     return null;
   }
 
-  Future<JanusSessionPlugin?> createSessionAndWatchVideoRecorded(String hash, int sens, String time) async {
+  Future<JanusSessionPlugin?> createSessionAndWatchVideoRecorded(String hash, int sens, String time, {int hd = 0}) async {
     _logger.info("Creating Session");
     _logger.fine("fine message");
     JanusSession session = JanusSession(refreshInterval: _refreshInterval, transport: _transport, context: this);
     try {
-      JanusSessionPlugin? sessionPlugin = await session.createAndWatchRecorded(hash, sens, time);
+      JanusSessionPlugin? sessionPlugin = await session.createAndWatchRecorded(hash, sens, time, hd: hd);
       return sessionPlugin;
     } catch (e) {
       _logger.severe(e);

@@ -15,11 +15,11 @@ class JanusSession {
     _transport = transport;
   }
 
-  Future<JanusSessionPlugin?> createAndWatch(int camId) async {
+  Future<JanusSessionPlugin?> createAndWatch(int camId, {int hd = 0}) async {
     try {
       print("FACCIO CREATE AND WATCH VIDEO CON CAMID: $camId");
       String transaction = getUuid().v4();
-      Map<String, dynamic> request = {"janus": "createwatch", "transaction": transaction, "id": camId, ..._context._tokenMap, ..._context._apiMap}
+      Map<String, dynamic> request = {"janus": "createwatch", "transaction": transaction, "id": camId, "hd": hd, ..._context._tokenMap, ..._context._apiMap}
         ..removeWhere((key, value) => value == null);
       Map<String, dynamic>? response;
       int height = 0;
@@ -59,12 +59,20 @@ class JanusSession {
     return null;
   }
 
-  Future<JanusSessionPlugin?> createAndWatchRecorded(String hash, int sens, String time) async {
+  Future<JanusSessionPlugin?> createAndWatchRecorded(String hash, int sens, String time, {int hd = 0}) async {
     try {
       print("FACCIO CREATE AND WATCH VIDEO RECORDED CON HASH: $hash, SENS: $sens, TIME: $time");
       String transaction = getUuid().v4();
-      Map<String, dynamic> request = {"janus": "createwatch", "transaction": transaction, "hash": hash, "sens": sens, "time": time, ..._context._tokenMap, ..._context._apiMap}
-        ..removeWhere((key, value) => value == null);
+      Map<String, dynamic> request = {
+        "janus": "createwatch",
+        "transaction": transaction,
+        "hash": hash,
+        "sens": sens,
+        "time": time,
+        "hd": hd,
+        ..._context._tokenMap,
+        ..._context._apiMap
+      }..removeWhere((key, value) => value == null);
       Map<String, dynamic>? response;
       int height = 0;
       int width = 0;

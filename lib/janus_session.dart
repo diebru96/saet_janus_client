@@ -144,7 +144,7 @@ class JanusSession {
     } on WebSocketChannelException catch (e) {
       throw "Connection to given url can't be established\n reason:-" + e.message!;
     } catch (e) {
-      throw "Connection to given url can't be established\n reason:-" + e.toString();
+      throw e;
     }
   }
 

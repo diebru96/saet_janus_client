@@ -178,6 +178,9 @@ class JanusClient {
       await session.create();
     } catch (e) {
       _logger.severe(e);
+      if (int.tryParse(e.toString()) != null) {
+        throw Exception(int.parse(e.toString()));
+      }
     }
     _logger.info("Session Created");
     return session;

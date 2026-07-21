@@ -836,6 +836,7 @@ class JanusPlugin {
         _context._logger.severe("Errore nel parsing del polling");
       }
       if (!_disposed && pollingActive) {
+        print("FACCIO HANDLE POLLING RICORSIVO");
         _handlePolling();
       }
 
@@ -922,6 +923,7 @@ class JanusPlugin {
 
   /// Disposes timers, stream controllers, transports, and media tied to this plugin.
   Future<void> dispose() async {
+    print("DISPOSING PLUGIN");
     _disposed = true;
     this.pollingActive = false;
     _pollingTimer?.cancel();

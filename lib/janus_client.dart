@@ -192,6 +192,9 @@ class JanusClient {
       return sessionPlugin;
     } catch (e) {
       _logger.severe(e);
+      if (int.tryParse(e.toString()) != null) {
+        return JanusSessionPlugin(session: null, streamingPlugin: null, height: 0, width: 0, statusCode: int.parse(e.toString()));
+      }
     }
     _logger.info("Session Created");
     return null;
@@ -221,8 +224,8 @@ class JanusSessionPlugin {
   JanusSession? session;
   JanusPlugin? streamingPlugin;
   JanusPlugin? videomuxPlugin;
-
+  int statusCode = 0;
   int height = 0;
   int width = 0;
-  JanusSessionPlugin({this.session, this.streamingPlugin, this.videomuxPlugin, this.height = 0, this.width = 0});
+  JanusSessionPlugin({this.session, this.streamingPlugin, this.videomuxPlugin, this.height = 0, this.width = 0, this.statusCode = 0});
 }

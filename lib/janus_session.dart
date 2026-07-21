@@ -27,7 +27,6 @@ class JanusSession {
       if (_transport is RestJanusTransport) {
         RestJanusTransport rest = (_transport as RestJanusTransport);
         response = (await rest.post(request)) as Map<String, dynamic>?;
-
         if (response != null) {
           if (response.containsKey('janus')) {
             _sessionId = response['session_id'];
@@ -53,7 +52,7 @@ class JanusSession {
     } on WebSocketChannelException catch (e) {
       throw "Connection to given url can't be established\n reason:-" + e.message!;
     } catch (e) {
-      throw "Connection to given url can't be established\n reason:-" + e.toString();
+      throw e;
     }
 
     return null;

@@ -30,8 +30,13 @@ class RestJanusTransport extends JanusTransport {
       suffixUrl = suffixUrl + "/$sessionId/$handleId";
     }
     try {
-      var response = (await http.post(Uri.parse(url! + suffixUrl), body: stringify(body))).body;
-      return parse(response);
+      final res = (await http.post(Uri.parse(url! + suffixUrl), body: stringify(body)));
+      if (res.statusCode < 300) {
+        var response = res.body;
+        return parse(response);
+      } else {
+        throw Exception(res.statusCode);
+      }
     } on JsonCyclicError {
       return null;
     } on JsonUnsupportedObjectError {
